@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Minha Primeira Stack CloudFormation - Bootcamp Santander Code Girls 2025. Cria um S3 Bucket e IAM Role básica.'
+
+Parameters:
+  BucketName:
+    Type: String
+    Default: 'meu-bucket-codegirls-2025' 
+    Description: Nome único para o S3 Bucket (deve ser globalmente único na AWS)
+  RoleName:
+    Type: String
+    Default: 'RoleBootcampAcessoS3'
+    Description: Nome da IAM Role para acessar o bucket
+
+Resources:
+  # S3 Bucket Simples
+  MeuBucketS3:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      AccessControl: Private  # Privado por segurança
+      Tags:
+        - Key: Projeto
+          Value: CodeGirls2025
+
+  # IAM Role para Acesso ao Bucket (exemplo básico)
+  MinhaRoleIAM:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref RoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com  # Exemplo para Lambda, mas pode ser EC2
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AcessoS3Bootcamp
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub 'arn:aws:s3:::${BucketName}/*'
+
+Outputs:
+  BucketURL:
+    Description: URL do S3 Bucket criado
+    Value: !Sub 'https://${BucketName}.s3.amazonaws.com'
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketURL'
+  RoleARN:
+    Description: ARN da IAM Role
+    Value: !GetAtt MinhaRoleIAM.Arn
+    Export: 
+      Name: !Sub '${AWS::StackName}-RoleARN'
