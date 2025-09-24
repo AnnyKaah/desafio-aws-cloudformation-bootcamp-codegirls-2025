@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Stack automatizada para Bootcamp Code Girls 2025 - S3 Bucket condicional e IAM Role com tags. Evolução da stack básica.
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: Nome único para o S3 Bucket (use [seu-nome]-2025-[random] para unicidade)
+    Default: bucket-automatizado-2025
+  RoleName:
+    Type: String
+    Description: Nome da IAM Role
+    Default: role-acesso-s3-automatizado
+  CriarBucket:
+    Type: String
+    Description: Criar o S3 Bucket? (sim/nao)
+    Default: sim
+    AllowedValues:
+      - sim
+      - nao
+  Ambiente:
+    Type: String
+    Description: Ambiente (dev/prod) para tags automáticas
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+
+Conditions:
+  BucketCondicional: !Equals [!Ref CriarBucket, sim]
+
+Resources:
+  MeuS3Bucket:
+    Type: AWS::S3::Bucket
+    Condition: BucketCondicional
+    Properties:
+      BucketName: !Ref BucketName
+      AccessControl: Private
+      Tags:
+        - Key: Projeto
+          Value: BootcampSantander2025
+        - Key: Ambiente
+          Value: !Ref Ambiente
+
+  MinhaIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref RoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      Tags:
+        - Key: Projeto
+          Value: BootcampSantander2025
+        - Key: Ambiente
+          Value: !Ref Ambiente
+
+Outputs:
+  BucketURL:
+    Description: URL do S3 Bucket (se criado)
+    Condition: BucketCondicional
+    Value: !Sub https://${BucketName}.s3.amazonaws.com
+  RoleARN:
+    Description: ARN da IAM Role
+    Value: !GetAtt MinhaIAMRole.Arn
+  StackStatus:
+    Description: Status da stack para monitoramento automatizado
+    Value: !Ref AWS::StackId
